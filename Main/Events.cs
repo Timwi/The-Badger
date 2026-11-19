@@ -4,8 +4,6 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.Exceptions;
-using System;
-using System.Threading.Tasks;
 
 namespace Badger
 {

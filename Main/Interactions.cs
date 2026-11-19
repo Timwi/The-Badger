@@ -1,22 +1,17 @@
-using System;
-using System.Diagnostics.Tracing;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Channels;
 using Badger.Class;
 using Badger.Classes;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.Exceptions;
-using Microsoft.VisualBasic;
 
 namespace Badger
 {
     public class Interactions
     {
-        private static readonly Game[] _games = new[]
-        {
+        private static readonly Game[] _games =
+        [
             new Game("mao", "Mao", 692901690483146762, 4, "Indefinite", "The game about figuring out the rules.", "🦡"),
             new Game("tac", "TAC", 692901782611034173, 4, "c.1-2 hours", "A 4-player strategy board game with cards.", "🎴"),
             new Game("social", "Social Deduction", 692901751094902895, 4, description: "e.g. Secret Hitler, etc.", emoji: "👤"),
@@ -27,11 +22,11 @@ namespace Badger
             new Game("bombbusters", "Bomb Busters", 1370462503670382593, 4, description: "A co-operative bomb defusal game.", emoji: "💣"),
             new Game("jigsaw", "Jigsaw", 1400890756687855697, 2, description: "Work together to complete a jigsaw puzzle.", emoji: "🧩"),
             new Game("new", "New Games", 1119710634532143164, description: "Suggest a game not listed above.", emoji: "🎲"),
-        };
+        ];
 
-        private static List<NewGame> newGames = new List<NewGame>();
+        private static readonly List<NewGame> newGames = [];
 
-        private static DiscordMessage? _pickerMessage;
+        private static DiscordMessage _pickerMessage;
         private static readonly SemaphoreSlim _postLock = new(1, 1);
         private static bool _startupDone = false;
         private static bool _restoreComplete = false;
@@ -48,10 +43,7 @@ namespace Badger
         public async Task AssignAllInteractions()
         {
             Bot.Client.InteractionCreated += LogInteractions;
-            Bot.Client.VoiceStateUpdated += async (c, e) =>
-            {
-                await UpdateVoiceChannels(e);
-            };
+            Bot.Client.VoiceStateUpdated += async (c, e) => await UpdateVoiceChannels(e);
 
             Bot.Client.ComponentInteractionCreated += async (c, e) =>
             {
@@ -95,7 +87,7 @@ namespace Badger
                 "You cannot ping for the same game while it is still looking for players.*"
             };
 
-            IEnumerable<DiscordSelectComponentOption> options = _games.Select(game => new DiscordSelectComponentOption(
+            var options = _games.Select(game => new DiscordSelectComponentOption(
                 label: game.DisplayName,
                 value: game.Value,
                 description: game.Description,
@@ -125,7 +117,7 @@ namespace Badger
             await _postLock.WaitAsync();
             try
             {
-                DiscordChannel ltpChannel = (await Bot.Client.GetGuildAsync(GuildID.TTS)).GetChannel(ChannelID.LTP);
+                var ltpChannel = (await Bot.Client.GetGuildAsync(GuildID.TTS)).GetChannel(ChannelID.LTP);
                 await RepostPickerAsync(ltpChannel);
             }
             finally
@@ -139,8 +131,8 @@ namespace Badger
             await _postLock.WaitAsync();
             try
             {
-                DiscordChannel ltpChannel = (await Bot.Client.GetGuildAsync(GuildID.TTS)).GetChannel(ChannelID.LTP);
-                DiscordMessage message = await ltpChannel.GetMessageAsync(messageId);
+                var ltpChannel = (await Bot.Client.GetGuildAsync(GuildID.TTS)).GetChannel(ChannelID.LTP);
+                var message = await ltpChannel.GetMessageAsync(messageId);
                 await message.ModifyAsync(BuildGamePickerMessage());
                 _pickerMessage = message;
             }
@@ -152,10 +144,10 @@ namespace Badger
 
         private static DiscordEmbed BuildJoinPostEmbed(string displayName, string duration, string comments, List<DiscordUser> players, DateTime? scheduledFor, bool locked)
         {
-            string playerList = "";
+            var playerList = "";
             if (players.Count > 0)
             {
-                foreach (DiscordUser player in players)
+                foreach (var player in players)
                 {
                     playerList += $"\n{player.Mention}";
                 }
@@ -189,7 +181,7 @@ namespace Badger
 
         private static async Task SendEphemeralErrorAsync(DiscordInteraction interaction, string description)
         {
-            DiscordFollowupMessageBuilder error = new DiscordFollowupMessageBuilder() { IsEphemeral = true }
+            var error = new DiscordFollowupMessageBuilder() { IsEphemeral = true }
                 .AddEmbed(new DiscordEmbedBuilder()
                 {
                     Color = new DiscordColor("#FFFFFF"),
@@ -203,10 +195,7 @@ namespace Badger
             await interaction.CreateFollowupMessageAsync(error);
         }
 
-        private static string SerializePlayers(List<DiscordUser> players)
-        {
-            return string.Join(",", players.Select(p => p.Id));
-        }
+        private static string SerializePlayers(List<DiscordUser> players) => string.Join(",", players.Select(p => p.Id));
 
         private static int InsertGamePost(GamePost row)
         {
@@ -220,7 +209,7 @@ namespace Badger
         {
             if (dbId == 0) return;
             using BadgerContext db = new();
-            GamePost? row = db.GamePosts.Find(dbId);
+            var row = db.GamePosts.Find(dbId);
             if (row == null) return;
             update(row);
             db.SaveChanges();
@@ -230,34 +219,31 @@ namespace Badger
         {
             if (dbId == 0) return;
             using BadgerContext db = new();
-            GamePost? row = db.GamePosts.Find(dbId);
+            var row = db.GamePosts.Find(dbId);
             if (row == null) return;
             db.GamePosts.Remove(row);
             db.SaveChanges();
         }
 
-        private static void GameTimerCallback(object? obj)
-        {
-            _ = Task.Run(async () =>
-            {
-                await _postLock.WaitAsync();
-                try
-                {
-                    await RunDeleteLogicAsync(obj);
-                }
-                catch (Exception ex)
-                {
-                    await Util.ThrowInteractionlessError(ex);
-                }
-                finally
-                {
-                    _postLock.Release();
-                }
-            });
-        }
+        private static void GameTimerCallback(object obj) => _ = Task.Run(async () =>
+                                                                      {
+                                                                          await _postLock.WaitAsync();
+                                                                          try
+                                                                          {
+                                                                              await RunDeleteLogicAsync(obj);
+                                                                          }
+                                                                          catch (Exception ex)
+                                                                          {
+                                                                              await Util.ThrowInteractionlessError(ex);
+                                                                          }
+                                                                          finally
+                                                                          {
+                                                                              _postLock.Release();
+                                                                          }
+                                                                      });
 
         // Caller must hold _postLock.
-        private static async Task RunDeleteLogicAsync(object? obj)
+        private static async Task RunDeleteLogicAsync(object obj)
         {
             if (obj is Game game)
             {
@@ -299,28 +285,25 @@ namespace Badger
             }
         }
 
-        private static void PingTimerCallback(object? obj)
-        {
-            _ = Task.Run(async () =>
-            {
-                await _postLock.WaitAsync();
-                try
-                {
-                    await RunScheduledPingLogicAsync(obj);
-                }
-                catch (Exception ex)
-                {
-                    await Util.ThrowInteractionlessError(ex);
-                }
-                finally
-                {
-                    _postLock.Release();
-                }
-            });
-        }
+        private static void PingTimerCallback(object obj) => _ = Task.Run(async () =>
+                                                                      {
+                                                                          await _postLock.WaitAsync();
+                                                                          try
+                                                                          {
+                                                                              await RunScheduledPingLogicAsync(obj);
+                                                                          }
+                                                                          catch (Exception ex)
+                                                                          {
+                                                                              await Util.ThrowInteractionlessError(ex);
+                                                                          }
+                                                                          finally
+                                                                          {
+                                                                              _postLock.Release();
+                                                                          }
+                                                                      });
 
         // Caller must hold _postLock.
-        private static async Task RunScheduledPingLogicAsync(object? obj)
+        private static async Task RunScheduledPingLogicAsync(object obj)
         {
             if (obj is Game game)
             {
@@ -340,7 +323,7 @@ namespace Badger
                     game.Announced = true;
                     UpdateGamePost(game.DbId, r => r.Announced = true);
 
-                    string playerList = string.Concat(game.Players.Select(p => $"\n{p.Mention}"));
+                    var playerList = string.Concat(game.Players.Select(p => $"\n{p.Mention}"));
                     DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FFFFFF"),
@@ -353,10 +336,10 @@ namespace Badger
                         }
                     };
 
-                    bool rolePing = game.ID != 0 && game.ScheduledFor != null
+                    var rolePing = game.ID != 0 && game.ScheduledFor != null
                         && game.ScheduledFor.Value - game.CreatedAt >= RolePingMinimum;
 
-                    string content = (rolePing ? $"<@&{game.ID}>" : "") + playerList;
+                    var content = (rolePing ? $"<@&{game.ID}>" : "") + playerList;
 #if DEBUG == false
                     List<IMention> mentions = game.Players.Select(p => (IMention)new UserMention(p.Id)).ToList();
                     if (rolePing)
@@ -364,14 +347,14 @@ namespace Badger
                         mentions.Add(new RoleMention(game.ID));
                     }
 #endif
-                    DiscordMessageBuilder messageBuilder = new DiscordMessageBuilder()
+                    var messageBuilder = new DiscordMessageBuilder()
                         .WithContent(content)
 #if DEBUG == false
                         .WithAllowedMentions(mentions)
 #endif
                         .AddEmbed(embed);
 
-                    TimerMessage timerMessage = new TimerMessage(await game.Message.Channel.SendMessageAsync(messageBuilder));
+                    var timerMessage = new TimerMessage(await game.Message.Channel.SendMessageAsync(messageBuilder));
                     await RepostPickerAsync(game.Message.Channel);
                 }
             }
@@ -409,8 +392,8 @@ namespace Badger
             }
             catch (NotFoundException) { }
 
-            string playerList = "";
-            foreach (DiscordUser player in players)
+            var playerList = "";
+            foreach (var player in players)
             {
                 playerList += $"\n{player.Mention}";
             }
@@ -429,18 +412,18 @@ namespace Badger
 #if DEBUG == false
             IMention[] userMentions = players.Select(p => (IMention)new UserMention(p.Id)).ToArray();
 #endif
-            DiscordMessageBuilder messageBuilder = new DiscordMessageBuilder()
+            var messageBuilder = new DiscordMessageBuilder()
                 .WithContent(playerList)
 #if DEBUG == false
                 .WithAllowedMentions(userMentions)
 #endif
                 .AddEmbed(finalEmbed);
 
-            TimerMessage timerMessage = new TimerMessage(await message.Channel.SendMessageAsync(messageBuilder));
+            var timerMessage = new TimerMessage(await message.Channel.SendMessageAsync(messageBuilder));
             await RepostPickerAsync(message.Channel);
         }
 
-        private async Task AfterGameSubmit(ModalSubmitEventArgs eventArgs)
+        private static async Task AfterGameSubmit(ModalSubmitEventArgs eventArgs)
         {
             await eventArgs.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
 
@@ -453,7 +436,7 @@ namespace Badger
                     return;
                 }
 
-                Game game = _games.First(x => x.Value == eventArgs.Interaction.Data.CustomId.Replace("GameModal", ""));
+                var game = _games.First(x => x.Value == eventArgs.Interaction.Data.CustomId.Replace("GameModal", ""));
 
                 if (game.Timer != null && !game.Pinged)
                 {
@@ -461,8 +444,8 @@ namespace Badger
                     return;
                 }
 
-                eventArgs.Values.TryGetValue("schedule", out string? scheduleInput);
-                if (!Util.TryParseSchedule(scheduleInput, out TimeSpan delay, out string? scheduleError))
+                eventArgs.Values.TryGetValue("schedule", out var scheduleInput);
+                if (!Util.TryParseSchedule(scheduleInput, out var delay, out var scheduleError))
                 {
                     await SendEphemeralErrorAsync(eventArgs.Interaction, scheduleError!);
                     return;
@@ -476,13 +459,13 @@ namespace Badger
 
                 game.ResetPost();
                 game.Players.Add(eventArgs.Interaction.User);
-                eventArgs.Values.TryGetValue("comments", out string? commentsInput);
+                eventArgs.Values.TryGetValue("comments", out var commentsInput);
                 game.Comments = string.IsNullOrEmpty(commentsInput) ? "No additional comments" : commentsInput;
                 game.CreatedAt = DateTime.Now;
                 game.ScheduledFor = delay == TimeSpan.Zero ? null : game.CreatedAt + delay;
                 game.DeleteAt = (game.ScheduledFor ?? game.CreatedAt) + PostLifetime;
 
-                DiscordChannel logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
+                var logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
                 await logChannel.SendMessageAsync(new DiscordEmbedBuilder()
                 {
                     Color = new DiscordColor("#FFFFFF"),
@@ -498,7 +481,7 @@ namespace Badger
                 DiscordButtonComponent plusButton = new(ButtonStyle.Success, "plusButton", "", false, new DiscordComponentEmoji(DiscordEmoji.FromName(Bot.Client, ":heavy_plus_sign:")));
                 DiscordButtonComponent minusButton = new(ButtonStyle.Danger, "minusButton", "", false, new DiscordComponentEmoji(DiscordEmoji.FromName(Bot.Client, ":heavy_minus_sign:")));
 
-                DiscordMessageBuilder messageBuilder = new DiscordMessageBuilder()
+                var messageBuilder = new DiscordMessageBuilder()
                 .AddEmbed(BuildJoinPostEmbed(game.DisplayName, game.Duration, game.Comments, game.Players, game.ScheduledFor, locked: false))
                 .AddComponents(plusButton, minusButton);
 #if DEBUG == false
@@ -510,7 +493,7 @@ namespace Badger
                 }
 #endif
 
-                DiscordChannel ltpChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.LTP);
+                var ltpChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.LTP);
                 game.Message = await ltpChannel.SendMessageAsync(messageBuilder);
 
                 try
@@ -519,8 +502,8 @@ namespace Badger
                     {
                         GameValue = game.Value,
                         Comments = game.Comments,
-                        MessageId = unchecked((long)game.Message.Id),
-                        ChannelId = unchecked((long)ltpChannel.Id),
+                        MessageId = unchecked((long) game.Message.Id),
+                        ChannelId = unchecked((long) ltpChannel.Id),
                         CreatedAt = game.CreatedAt,
                         ScheduledFor = game.ScheduledFor,
                         DeleteAt = game.DeleteAt,
@@ -541,10 +524,10 @@ namespace Badger
                     return;
                 }
 
-                game.Timer = new Timer(GameTimerCallback, game, (long)Math.Max(0, (game.DeleteAt - DateTime.Now).TotalMilliseconds), Timeout.Infinite);
+                game.Timer = new Timer(GameTimerCallback, game, (long) Math.Max(0, (game.DeleteAt - DateTime.Now).TotalMilliseconds), Timeout.Infinite);
                 if (game.ScheduledFor != null)
                 {
-                    game.PingTimer = new Timer(PingTimerCallback, game, (long)Math.Max(0, (game.ScheduledFor.Value - DateTime.Now).TotalMilliseconds), Timeout.Infinite);
+                    game.PingTimer = new Timer(PingTimerCallback, game, (long) Math.Max(0, (game.ScheduledFor.Value - DateTime.Now).TotalMilliseconds), Timeout.Infinite);
                 }
 
                 await RepostPickerAsync(ltpChannel);
@@ -559,7 +542,7 @@ namespace Badger
             }
         }
 
-        private async Task AfterNewGameSubmit(ModalSubmitEventArgs eventArgs)
+        private static async Task AfterNewGameSubmit(ModalSubmitEventArgs eventArgs)
         {
             await eventArgs.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
 
@@ -572,25 +555,25 @@ namespace Badger
                     return;
                 }
 
-                Game game = _games.First(x => x.Value == "new");
+                var game = _games.First(x => x.Value == "new");
 
-                eventArgs.Values.TryGetValue("schedule", out string? scheduleInput);
-                if (!Util.TryParseSchedule(scheduleInput, out TimeSpan delay, out string? scheduleError))
+                eventArgs.Values.TryGetValue("schedule", out var scheduleInput);
+                if (!Util.TryParseSchedule(scheduleInput, out var delay, out var scheduleError))
                 {
                     await SendEphemeralErrorAsync(eventArgs.Interaction, scheduleError!);
                     return;
                 }
 
-                eventArgs.Values.TryGetValue("comments", out string? commentsInput);
-                eventArgs.Values.TryGetValue("duration", out string? durationInput);
-                NewGame newGame = new NewGame(game, eventArgs.Values["name"],
+                eventArgs.Values.TryGetValue("comments", out var commentsInput);
+                eventArgs.Values.TryGetValue("duration", out var durationInput);
+                var newGame = new NewGame(game, eventArgs.Values["name"],
                     string.IsNullOrEmpty(commentsInput) ? "No additional comments" : commentsInput,
                     string.IsNullOrEmpty(durationInput) ? "Not specified" : durationInput);
                 newGame.Players.Add(eventArgs.Interaction.User);
                 newGame.ScheduledFor = delay == TimeSpan.Zero ? null : newGame.Created + delay;
                 newGame.DeleteAt = (newGame.ScheduledFor ?? newGame.Created) + PostLifetime;
 
-                DiscordChannel logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
+                var logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
                 await logChannel.SendMessageAsync(new DiscordEmbedBuilder()
                 {
                     Color = new DiscordColor("#FFFFFF"),
@@ -606,7 +589,7 @@ namespace Badger
                 DiscordButtonComponent plusButton = new(ButtonStyle.Success, "plusButton", "", false, new DiscordComponentEmoji(DiscordEmoji.FromName(Bot.Client, ":heavy_plus_sign:")));
                 DiscordButtonComponent minusButton = new(ButtonStyle.Danger, "minusButton", "", false, new DiscordComponentEmoji(DiscordEmoji.FromName(Bot.Client, ":heavy_minus_sign:")));
 
-                DiscordMessageBuilder messageBuilder = new DiscordMessageBuilder()
+                var messageBuilder = new DiscordMessageBuilder()
                 .AddEmbed(BuildJoinPostEmbed(newGame.Name, newGame.Duration, newGame.Comments, newGame.Players, newGame.ScheduledFor, locked: false))
                 .AddComponents(plusButton, minusButton);
 #if DEBUG == false
@@ -615,7 +598,7 @@ namespace Badger
                     .WithAllowedMentions(new IMention[] { new RoleMention(game.ID) });
 #endif
 
-                DiscordChannel ltpChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.LTP);
+                var ltpChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.LTP);
                 newGame.Message = await ltpChannel.SendMessageAsync(messageBuilder);
 
                 try
@@ -626,8 +609,8 @@ namespace Badger
                         CustomName = newGame.Name,
                         CustomDuration = newGame.Duration,
                         Comments = newGame.Comments,
-                        MessageId = unchecked((long)newGame.Message.Id),
-                        ChannelId = unchecked((long)ltpChannel.Id),
+                        MessageId = unchecked((long) newGame.Message.Id),
+                        ChannelId = unchecked((long) ltpChannel.Id),
                         CreatedAt = newGame.Created,
                         ScheduledFor = newGame.ScheduledFor,
                         DeleteAt = newGame.DeleteAt,
@@ -645,10 +628,10 @@ namespace Badger
                     return;
                 }
 
-                newGame.Timer = new Timer(GameTimerCallback, newGame, (long)Math.Max(0, (newGame.DeleteAt - DateTime.Now).TotalMilliseconds), Timeout.Infinite);
+                newGame.Timer = new Timer(GameTimerCallback, newGame, (long) Math.Max(0, (newGame.DeleteAt - DateTime.Now).TotalMilliseconds), Timeout.Infinite);
                 if (newGame.ScheduledFor != null)
                 {
-                    newGame.PingTimer = new Timer(PingTimerCallback, newGame, (long)Math.Max(0, (newGame.ScheduledFor.Value - DateTime.Now).TotalMilliseconds), Timeout.Infinite);
+                    newGame.PingTimer = new Timer(PingTimerCallback, newGame, (long) Math.Max(0, (newGame.ScheduledFor.Value - DateTime.Now).TotalMilliseconds), Timeout.Infinite);
                 }
 
                 newGames.Add(newGame);
@@ -665,7 +648,7 @@ namespace Badger
             }
         }
 
-        private async Task AfterGameSelect(ComponentInteractionCreateEventArgs eventArgs)
+        private static async Task AfterGameSelect(ComponentInteractionCreateEventArgs eventArgs)
         {
             if (!_restoreComplete)
             {
@@ -675,7 +658,7 @@ namespace Badger
                 return;
             }
 
-            Game game = _games.First(x => x.Value == eventArgs.Values[0]);
+            var game = _games.First(x => x.Value == eventArgs.Values[0]);
 
             if (game.Value == "new")
             {
@@ -708,7 +691,7 @@ namespace Badger
             }
         }
 
-        private async Task AfterJoinGameSelect(ComponentInteractionCreateEventArgs eventArgs, bool add)
+        private static async Task AfterJoinGameSelect(ComponentInteractionCreateEventArgs eventArgs, bool add)
         {
             await eventArgs.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
 
@@ -721,8 +704,8 @@ namespace Badger
                     return;
                 }
 
-                Game? game = _games.FirstOrDefault(x => x.Message?.Id == eventArgs.Message.Id);
-                NewGame? newGame = game == null ? newGames.FirstOrDefault(x => x.Message?.Id == eventArgs.Message.Id) : null;
+                var game = _games.FirstOrDefault(x => x.Message?.Id == eventArgs.Message.Id);
+                var newGame = game == null ? newGames.FirstOrDefault(x => x.Message?.Id == eventArgs.Message.Id) : null;
 
                 if (game == null && newGame == null)
                 {
@@ -732,7 +715,7 @@ namespace Badger
 
                 if (game != null ? game.Pinged : newGame!.Pinged) return;
 
-                List<DiscordUser> players = game != null ? game.Players : newGame!.Players;
+                var players = game != null ? game.Players : newGame!.Players;
 
                 if (add)
                 {
@@ -741,17 +724,17 @@ namespace Badger
                 }
                 else
                 {
-                    DiscordUser? existing = players.FirstOrDefault(p => p.Id == eventArgs.User.Id);
+                    var existing = players.FirstOrDefault(p => p.Id == eventArgs.User.Id);
                     if (existing == null) return;
                     players.Remove(existing);
                 }
 
                 UpdateGamePost(game != null ? game.DbId : newGame!.DbId, r => r.PlayerIds = SerializePlayers(players));
 
-                string displayName = game != null ? game.DisplayName : newGame!.Name;
-                string duration = game != null ? game.Duration : newGame!.Duration;
-                string comments = game != null ? game.Comments : newGame!.Comments;
-                DateTime? scheduledFor = game != null ? game.ScheduledFor : newGame!.ScheduledFor;
+                var displayName = game != null ? game.DisplayName : newGame!.Name;
+                var duration = game != null ? game.Duration : newGame!.Duration;
+                var comments = game != null ? game.Comments : newGame!.Comments;
+                var scheduledFor = game != null ? game.ScheduledFor : newGame!.ScheduledFor;
 
                 try
                 {
@@ -760,7 +743,7 @@ namespace Badger
                 catch (NotFoundException)
                 {
                     // The post was manually deleted — clean up its state and DB row.
-                    await RunDeleteLogicAsync(game != null ? (object)game : newGame!);
+                    await RunDeleteLogicAsync(game != null ? game : newGame!);
                     return;
                 }
 
@@ -768,7 +751,7 @@ namespace Badger
 
                 if (game != null)
                 {
-                    bool pingDue = game.ScheduledFor == null || game.Announced;
+                    var pingDue = game.ScheduledFor == null || game.Announced;
                     if (pingDue && game.MinPlayers > 0 && players.Count >= game.MinPlayers)
                     {
                         game.Pinged = true;
@@ -805,8 +788,8 @@ namespace Badger
             await _postLock.WaitAsync();
             try
             {
-                DiscordGuild guild = await Bot.Client.GetGuildAsync(GuildID.TTS);
-                DiscordChannel ltpChannel = guild.GetChannel(ChannelID.LTP);
+                var guild = await Bot.Client.GetGuildAsync(GuildID.TTS);
+                var ltpChannel = guild.GetChannel(ChannelID.LTP);
 
                 List<GamePost> rows;
                 using (BadgerContext db = new())
@@ -814,16 +797,16 @@ namespace Badger
                     rows = db.GamePosts.ToList();
                 }
 
-                foreach (GamePost row in rows)
+                foreach (var row in rows)
                 {
                     try
                     {
-                        DiscordChannel channel = guild.GetChannel(unchecked((ulong)row.ChannelId)) ?? ltpChannel;
+                        var channel = guild.GetChannel(unchecked((ulong) row.ChannelId)) ?? ltpChannel;
 
                         DiscordMessage message;
                         try
                         {
-                            message = await channel.GetMessageAsync(unchecked((ulong)row.MessageId));
+                            message = await channel.GetMessageAsync(unchecked((ulong) row.MessageId));
                         }
                         catch (NotFoundException)
                         {
@@ -831,7 +814,7 @@ namespace Badger
                             continue;
                         }
 
-                        Game? game = _games.FirstOrDefault(x => x.Value == row.GameValue);
+                        var game = _games.FirstOrDefault(x => x.Value == row.GameValue);
                         if (game == null)
                         {
                             try { await message.DeleteAsync(); }
@@ -840,10 +823,10 @@ namespace Badger
                             continue;
                         }
 
-                        List<DiscordUser> players = new();
-                        foreach (string idString in row.PlayerIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        var players = new List<DiscordUser>();
+                        foreach (var idString in row.PlayerIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
                         {
-                            if (!ulong.TryParse(idString, out ulong userId)) continue;
+                            if (!ulong.TryParse(idString, out var userId)) continue;
                             try { players.Add(await Bot.Client.GetUserAsync(userId)); }
                             catch (NotFoundException) { }
                         }
@@ -851,7 +834,7 @@ namespace Badger
                         object post;
                         if (game.Value == "new")
                         {
-                            NewGame newGame = new NewGame(game, row.CustomName ?? "Unknown", row.Comments, row.CustomDuration ?? "Not specified")
+                            var newGame = new NewGame(game, row.CustomName ?? "Unknown", row.Comments, row.CustomDuration ?? "Not specified")
                             {
                                 Message = message,
                                 ScheduledFor = row.ScheduledFor,
@@ -885,7 +868,7 @@ namespace Badger
                             continue;
                         }
 
-                        long deleteDue = (long)Math.Max(0, (row.DeleteAt - DateTime.Now).TotalMilliseconds);
+                        var deleteDue = (long) Math.Max(0, (row.DeleteAt - DateTime.Now).TotalMilliseconds);
                         if (post is Game postGame)
                         {
                             postGame.Timer = new Timer(GameTimerCallback, postGame, deleteDue, Timeout.Infinite);
@@ -906,7 +889,7 @@ namespace Badger
                             }
                             else
                             {
-                                long pingDue = (long)Math.Max(0, (row.ScheduledFor.Value - DateTime.Now).TotalMilliseconds);
+                                var pingDue = (long) Math.Max(0, (row.ScheduledFor.Value - DateTime.Now).TotalMilliseconds);
                                 if (post is Game pingGame)
                                 {
                                     pingGame.PingTimer = new Timer(PingTimerCallback, pingGame, pingDue, Timeout.Infinite);
@@ -924,8 +907,8 @@ namespace Badger
                     }
                 }
 
-                IReadOnlyList<DiscordMessage> messages = await ltpChannel.GetMessagesAsync(100);
-                foreach (DiscordMessage message in messages)
+                var messages = await ltpChannel.GetMessagesAsync(100);
+                foreach (var message in messages)
                 {
                     if (message.Author != null && message.Author.Id == Bot.Client.CurrentUser.Id
                         && message.Components != null
@@ -951,13 +934,13 @@ namespace Badger
 
         private async Task LogInteractions(DiscordClient client, InteractionCreateEventArgs eventArgs)
         {
-            DiscordChannel channel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
+            var channel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
 
-            string options = "";
+            var options = "";
 
             if (eventArgs.Interaction.Data.Options != null)
             {
-                foreach (DiscordInteractionDataOption option in eventArgs.Interaction.Data.Options)
+                foreach (var option in eventArgs.Interaction.Data.Options)
                 {
                     options += $" {option.Name}: *{option.Value}*";
                 }
@@ -981,7 +964,7 @@ namespace Badger
 
         private async Task UpdateVoiceChannels(VoiceStateUpdateEventArgs eventArgs)
         {
-        again:
+            again:
             if (_updatingChannels)
             {
                 _eventDuringChannelUpdate = true;
@@ -991,7 +974,7 @@ namespace Badger
             try
             {
                 // Check if the channel(s) has/have the format "<name> #<number>"
-                string? channelName = null;
+                string channelName = null;
                 Match m;
                 if (eventArgs.Before != null && eventArgs.Before.Channel != null && (m = Regex.Match(eventArgs.Before.Channel.Name, @"^(.*) #\d+$")).Success)
                 {
@@ -1033,8 +1016,8 @@ namespace Badger
                 .ToList();
 
             // Delete empty voice channels except for the lowest-numbered one
-            bool isFirst = true;
-            for (int chIx = 0; chIx < channelInfos.Count; chIx++)
+            var isFirst = true;
+            for (var chIx = 0; chIx < channelInfos.Count; chIx++)
             {
                 if (channelInfos[chIx].UserCount == 0)
                 {
@@ -1044,7 +1027,7 @@ namespace Badger
                     }
                     else
                     {
-                        DiscordChannel logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
+                        var logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
                         DiscordEmbedBuilder embed = new()
                         {
                             Color = new DiscordColor("#FFFFFF"),
@@ -1060,7 +1043,7 @@ namespace Badger
 
                         if (channelInfos[chIx].Channel.GetMessagesAsync(1000).Result.Count > 0)
                         {
-                            string txtFile = $"Last 1000 Messages from {channelInfos[chIx].Channel.Name}:\r\n";
+                            var txtFile = $"Last 1000 Messages from {channelInfos[chIx].Channel.Name}:\r\n";
                             var messages = channelInfos[chIx].Channel.GetMessagesAsync(1000).Result.ToList();
                             messages.Reverse();
                             foreach (var message in messages)
@@ -1072,9 +1055,9 @@ namespace Badger
                                 }
                                 txtFile += "\r\n";
                             }
-                            string fileName = $"{DateTime.Now.ToString().Replace(":", "").Replace("/", "-")} - {channelInfos[chIx].Channel.Name}.txt";
+                            var fileName = $"{DateTime.Now.ToString().Replace(":", "").Replace("/", "-")} - {channelInfos[chIx].Channel.Name}.txt";
                             await File.WriteAllTextAsync(fileName, txtFile);
-                            Stream stream = File.Open(fileName, FileMode.Open);
+                            var stream = File.Open(fileName, FileMode.Open);
                             await logChannel.SendMessageAsync(new DiscordMessageBuilder().AddFile(fileName, stream));
                             stream.Close();
                             await stream.DisposeAsync();
@@ -1088,13 +1071,13 @@ namespace Badger
             }
 
             // Rename channels whose numbers are now out of order
-            bool hasEmpty = false;
-            int curNum = 1;
+            var hasEmpty = false;
+            var curNum = 1;
             foreach (var ch in channelInfos)
             {
                 if (ch.Number != curNum)
                 {
-                    DiscordChannel logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
+                    var logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
                     DiscordEmbedBuilder embed = new()
                     {
                         Color = new DiscordColor("#FFFFFF"),
@@ -1117,10 +1100,10 @@ namespace Badger
             // Create a new channel if no channels are empty
             if (!hasEmpty)
             {
-                DiscordChannel lastChannel = channelInfos.Last().Channel;
+                var lastChannel = channelInfos.Last().Channel;
                 await guild.CreateChannelAsync($"{name} #{curNum}", ChannelType.Voice, parent: lastChannel.Parent, position: lastChannel.Position);
 
-                DiscordChannel logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
+                var logChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.BOTLOGS);
                 DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FFFFFF"),

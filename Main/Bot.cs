@@ -1,4 +1,8 @@
-﻿using DSharpPlus;
+﻿using System.Text;
+using Badger.Class;
+using Badger.Classes;
+using Badger.Commands;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
@@ -7,10 +11,6 @@ using DSharpPlus.Interactivity.Enums;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using Microsoft.Extensions.Logging;
-using System.Text;
-using Badger.Class;
-using Badger.Classes;
-using Badger.Commands;
 using Newtonsoft.Json;
 
 namespace Badger
@@ -24,13 +24,13 @@ namespace Badger
 
         public async Task RunAsync()
         {
-            string json = string.Empty;
+            var json = string.Empty;
 
-            using (FileStream fs = File.OpenRead("config.json"))
-            using (StreamReader sr = new(fs, new UTF8Encoding(false)))
+            using (var fs = File.OpenRead("config.json"))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync().ConfigureAwait(false);
 
-            BotConfig configJson = JsonConvert.DeserializeObject<BotConfig>(json);
+            var configJson = JsonConvert.DeserializeObject<BotConfig>(json);
 
             DiscordConfiguration config = new()
             {
@@ -53,7 +53,7 @@ namespace Badger
             Client.UseInteractivity(new InteractivityConfiguration
             {
                 PollBehaviour = PollBehaviour.KeepEmojis,
-                AckPaginationButtons = true,
+                //AckPaginationButtons = true,
                 Timeout = TimeSpan.FromSeconds(60)
             });
 
@@ -87,9 +87,6 @@ namespace Badger
             await Task.Delay(-1);
         }
 
-        private Task OnClientReady(DiscordClient sender, ReadyEventArgs e)
-        {
-            return Task.CompletedTask;
-        }
+        private Task OnClientReady(DiscordClient sender, ReadyEventArgs e) => Task.CompletedTask;
     }
 }

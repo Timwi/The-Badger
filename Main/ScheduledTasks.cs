@@ -1,12 +1,4 @@
 ﻿using Badger.Class;
-using Badger.Classes;
-using FluentScheduler;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.Tracing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Badger.Main
 {

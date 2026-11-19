@@ -1,9 +1,7 @@
-using DSharpPlus.Entities;
-using DSharpPlus;
-using DSharpPlus.SlashCommands;
 using Badger.Class;
-using DSharpPlus.CommandsNext.Converters;
-using Badger.Classes;
+using DSharpPlus;
+using DSharpPlus.Entities;
+using DSharpPlus.SlashCommands;
 
 namespace Badger.Commands
 {
@@ -11,8 +9,8 @@ namespace Badger.Commands
     {
         [SlashCommand("generategamepicker", "Regenerates the game picker message in the looking-to-play channel.")]
         [SlashCommandPermissions(Permissions.Administrator)]
-        public async Task GenerateGamePicker(InteractionContext ctx,
-            [Option("messageid", "ID of an existing picker message in the looking-to-play channel to update in place.")] string? messageId = null)
+        public static async Task GenerateGamePicker(InteractionContext ctx,
+            [Option("messageid", "ID of an existing picker message in the looking-to-play channel to update in place.")] string messageId = null)
         {
             try
             {

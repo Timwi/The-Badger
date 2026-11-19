@@ -1,6 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using Badger.Class;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace Badger.Classes
 {
@@ -10,23 +10,20 @@ namespace Badger.Classes
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            string db = "Badger";
+            var db = "Badger";
             options.UseSqlServer(Util.GetDBConnectionString(db));
             options.EnableSensitiveDataLogging(true);
         }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<GamePost>().ToTable("GamePosts");
-        }
+        protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.Entity<GamePost>().ToTable("GamePosts");
     }
 
     public class GamePost
     {
         [Key] public int Id { get; set; }
         public string GameValue { get; set; } = "";
-        public string? CustomName { get; set; }
-        public string? CustomDuration { get; set; }
+        public string CustomName { get; set; }
+        public string CustomDuration { get; set; }
         public string Comments { get; set; } = "";
         public long MessageId { get; set; }
         public long ChannelId { get; set; }

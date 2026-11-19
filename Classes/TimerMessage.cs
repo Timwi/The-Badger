@@ -6,7 +6,7 @@ namespace Badger.Classes
     {
         // Roots live instances so the Timer cannot be garbage-collected (and silently
         // cancelled) before it fires.
-        private static readonly HashSet<TimerMessage> _live = new();
+        private static readonly HashSet<TimerMessage> _live = [];
 
         public Timer Timer { get; set; }
         public DiscordMessage Message { get; set; }
@@ -14,14 +14,12 @@ namespace Badger.Classes
         {
             Message = message;
             lock (_live)
-            {
                 _live.Add(this);
-            }
             Timer = new Timer(TimerMessageCallback, this, 600000, 0);
         }
-        private void TimerMessageCallback(object? obj)
+        private void TimerMessageCallback(object obj)
         {
-            TimerMessage timerMessage = (TimerMessage)obj;
+            var timerMessage = (TimerMessage) obj;
             timerMessage.Message.DeleteAsync().ConfigureAwait(false);
             timerMessage.Timer.Dispose();
             lock (_live)
