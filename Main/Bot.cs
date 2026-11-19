@@ -9,6 +9,7 @@ using DSharpPlus.SlashCommands;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using Badger.Class;
+using Badger.Classes;
 using Badger.Commands;
 using Newtonsoft.Json;
 
@@ -43,6 +44,12 @@ namespace Badger
 
             Client.Ready += OnClientReady;
 
+            Client.GuildDownloadCompleted += (c, e) =>
+            {
+                _ = Task.Run(Interactions.OnStartupAsync);
+                return Task.CompletedTask;
+            };
+
             Client.UseInteractivity(new InteractivityConfiguration
             {
                 PollBehaviour = PollBehaviour.KeepEmojis,
@@ -72,6 +79,8 @@ namespace Badger
             {
                 Name = $"figuring out the rules."
             };
+
+            Data.InitializeDatabase();
 
             await Client.ConnectAsync(activity);
 
