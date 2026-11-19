@@ -41,7 +41,7 @@ namespace Badger.Classes
     {
         public override int Execute()
         {
-            new SingleSelfServiceProcess<BadgerService>().Install(ServiceAccount.LocalService, @$"runservice ""{ConfigFile}""");
+            new SingleSelfServiceProcess<BadgerService>().Install(ServiceAccount.NetworkService, @$"runservice ""{ConfigFile}""");
             return 0;
         }
     }

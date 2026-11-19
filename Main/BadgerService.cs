@@ -16,6 +16,7 @@ namespace Badger
             ServiceName = "TheBadger";
             ServiceDisplayName = "The Badger Discord Bot";
             ServiceDescription = "Runs the Badger Discord bot.";
+            ServiceStartMode = System.ServiceProcess.ServiceStartMode.Automatic;
         }
 
         protected override void OnStart(string[] args)
