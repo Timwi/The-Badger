@@ -2,4 +2,4 @@
 dotnet_diagnostic.SYSLIB1045.severity = none
 dotnet_diagnostic.IDE0130.severity = none
 dotnet_diagnostic.IDE0305.severity = none
-
+dotnet_diagnostic.CA2211.severity = none

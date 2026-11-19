@@ -342,7 +342,7 @@ namespace Badger
 
                     var content = (rolePing ? $"<@&{game.ID}>" : "") + playerList;
 #if DEBUG == false
-                    List<IMention> mentions = game.Players.Select(p => (IMention)new UserMention(p.Id)).ToList();
+                    var mentions = game.Players.Select(p => (IMention) new UserMention(p.Id)).ToList();
                     if (rolePing)
                     {
                         mentions.Add(new RoleMention(game.ID));
@@ -411,7 +411,7 @@ namespace Badger
             };
 
 #if DEBUG == false
-            IMention[] userMentions = players.Select(p => (IMention)new UserMention(p.Id)).ToArray();
+            var userMentions = players.Select(p => (IMention) new UserMention(p.Id)).ToArray();
 #endif
             var messageBuilder = new DiscordMessageBuilder()
                 .WithContent(playerList)
@@ -490,7 +490,7 @@ namespace Badger
                 {
                     messageBuilder
                         .WithContent($"<@&{game.ID}>")
-                        .WithAllowedMentions(new IMention[] { new RoleMention(game.ID) });
+                        .WithAllowedMentions([new RoleMention(game.ID)]);
                 }
 #endif
 
@@ -596,7 +596,7 @@ namespace Badger
 #if DEBUG == false
                 messageBuilder
                     .WithContent($"<@&{game.ID}> {newGame.Name}")
-                    .WithAllowedMentions(new IMention[] { new RoleMention(game.ID) });
+                    .WithAllowedMentions([new RoleMention(game.ID)]);
 #endif
 
                 var ltpChannel = Bot.Client.GetGuildAsync(GuildID.TTS).Result.GetChannel(ChannelID.LTP);

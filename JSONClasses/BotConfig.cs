@@ -6,5 +6,8 @@ namespace Badger.Class
     {
         [JsonProperty("token")]
         public string Token { get; private set; }
+
+        [JsonProperty("connection_string")]
+        public string ConnectionString { get; private set; }
     }
 }

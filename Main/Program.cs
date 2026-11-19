@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using Badger.Classes;
+using RT.CommandLine;
 using RT.Services;
 
 namespace Badger
@@ -10,26 +12,15 @@ namespace Badger
             try { Console.OutputEncoding = Encoding.UTF8; }
             catch { }
 
-            var serviceProcess = new SingleSelfServiceProcess<BadgerService>();
-            if (args.Length == 1 && args[0].Equals("install", StringComparison.OrdinalIgnoreCase))
+            CommandLine cmd;
+            try { cmd = CommandLineParser.Parse<CommandLine>(args); }
+            catch (CommandLineParseException exc)
             {
-                serviceProcess.Install(ServiceAccount.LocalService, BadgerService.ServiceArguments);
-                return 0;
-            }
-            if (args.Length == 1 && args[0].Equals("uninstall", StringComparison.OrdinalIgnoreCase))
-            {
-                serviceProcess.Uninstall();
-                return 0;
-            }
-            if (args.Length == 1 && args[0] == BadgerService.ServiceArguments)
-            {
-                Environment.CurrentDirectory = AppContext.BaseDirectory;
-                serviceProcess.ExecuteServices();
-                return 0;
+                exc.WriteUsageInfoToConsole();
+                return 1;
             }
 
-            new Bot().RunAsync().GetAwaiter().GetResult();
-            return 0;
+            return cmd.Execute();
         }
     }
 }

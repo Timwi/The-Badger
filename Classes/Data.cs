@@ -1,17 +1,17 @@
 using System.ComponentModel.DataAnnotations;
-using Badger.Class;
 using Microsoft.EntityFrameworkCore;
 
 namespace Badger.Classes
 {
     public class BadgerContext : DbContext
     {
+        public static string DbConnectionString;
+
         public DbSet<GamePost> GamePosts { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            var db = "Badger";
-            options.UseSqlServer(Util.GetDBConnectionString(db));
+            options.UseSqlServer(DbConnectionString);
             options.EnableSensitiveDataLogging(true);
         }
 

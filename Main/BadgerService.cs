@@ -5,9 +5,9 @@ namespace Badger
 {
     public class BadgerService : SelfService
     {
-        public const string ServiceArguments = "--service";
+        public static string ConfigFile;
 
-        private readonly Bot _bot = new();
+        private readonly Bot _bot = new(ConfigFile);
         private readonly CancellationTokenSource _stopping = new();
         private Task _runTask;
 

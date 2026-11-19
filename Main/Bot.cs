@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 
 namespace Badger
 {
-    public class Bot
+    public class Bot(string configFilePath)
     {
         public Interactions interactions = new();
         public Events events = new();
@@ -26,7 +26,7 @@ namespace Badger
         {
             var json = string.Empty;
 
-            using (var fs = File.OpenRead("config.json"))
+            using (var fs = File.OpenRead(configFilePath))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
 
@@ -39,6 +39,7 @@ namespace Badger
                 AutoReconnect = true,
                 MinimumLogLevel = LogLevel.Debug
             };
+            BadgerContext.DbConnectionString = configJson.ConnectionString;
 
             Client = new DiscordClient(config);
 

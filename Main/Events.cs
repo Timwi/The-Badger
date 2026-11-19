@@ -60,7 +60,7 @@ namespace Badger
                     return;
                 }
 
-                IReadOnlyList<(ulong ChannelId, ulong MessageId)> raidMessages = _raidTracker.GetRaidMessages(e.Author.Id);
+                var raidMessages = _raidTracker.GetRaidMessages(e.Author.Id);
 
                 await e.Guild.BanMemberAsync(member, RaidGuard.BanDeleteMessageDays,
                     $"Anti-raid: messaged {RaidGuard.ChannelThreshold}+ channels within {RaidGuard.Window.TotalSeconds} seconds");
@@ -68,13 +68,12 @@ namespace Badger
 
                 // The ban's own prune skips messages in voice channel chats (and threads), so delete the
                 // tracked raid messages directly.
-                int removed = 0;
-                foreach ((ulong channelId, ulong messageId) in raidMessages)
+                var removed = 0;
+                foreach ((var channelId, var messageId) in raidMessages)
                 {
                     try
                     {
-                        DiscordChannel? channel = e.Guild.GetChannel(channelId)
-                        ?? (e.Guild.Threads.TryGetValue(channelId, out DiscordThreadChannel? thread) ? thread : null);
+                        var channel = e.Guild.GetChannel(channelId) ?? (e.Guild.Threads.TryGetValue(channelId, out var thread) ? thread : null);
                         if (channel == null)
                             continue;
                         await channel.DeleteMessageAsync(await channel.GetMessageAsync(messageId), "Anti-raid cleanup");
@@ -91,7 +90,7 @@ namespace Badger
                     }
                 }
 
-                string description = $"Banned {e.Author.Mention} ({e.Author.Username}, {e.Author.Id}) for posting in " +
+                var description = $"Banned {e.Author.Mention} ({e.Author.Username}, {e.Author.Id}) for posting in " +
                                      $"{RaidGuard.ChannelThreshold}+ channels within {RaidGuard.Window.TotalSeconds} seconds. " +
                                      $"Removed {removed}/{raidMessages.Count} raid messages and requested a " +
                                      $"{RaidGuard.BanDeleteMessageDays}-day message prune. " +
