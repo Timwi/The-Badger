@@ -7,7 +7,7 @@ namespace Badger.Classes
         private sealed class UserActivity
         {
             public readonly object Lock = new();
-            public readonly List<(ulong ChannelId, ulong MessageId, DateTimeOffset Timestamp)> Entries = new();
+            public readonly List<(ulong ChannelId, ulong MessageId, DateTimeOffset Timestamp)> Entries = [];
             public bool Tripped;
             public DateTimeOffset LastSeen;
         }
@@ -27,7 +27,7 @@ namespace Badger.Classes
         /// Returns true exactly once — on the message that crosses the threshold.
         public bool RecordMessage(ulong userId, ulong channelId, ulong messageId, DateTimeOffset timestamp)
         {
-            UserActivity activity = _users.GetOrAdd(userId, _ => new UserActivity());
+            var activity = _users.GetOrAdd(userId, _ => new UserActivity());
             lock (activity.Lock)
             {
                 // A ban is already in flight for this user; don't trigger again.
@@ -35,7 +35,7 @@ namespace Badger.Classes
                     return false;
 
                 activity.LastSeen = timestamp;
-                DateTimeOffset cutoff = timestamp - _window;
+                var cutoff = timestamp - _window;
                 activity.Entries.RemoveAll(e => e.Timestamp < cutoff);
                 activity.Entries.Add((channelId, messageId, timestamp));
 
@@ -52,28 +52,21 @@ namespace Badger.Classes
         /// entries are frozen from that point until Forget.
         public IReadOnlyList<(ulong ChannelId, ulong MessageId)> GetRaidMessages(ulong userId)
         {
-            if (!_users.TryGetValue(userId, out UserActivity activity))
-                return Array.Empty<(ulong, ulong)>();
+            if (!_users.TryGetValue(userId, out var activity))
+                return [];
             lock (activity.Lock)
-            {
                 return activity.Entries.Select(e => (e.ChannelId, e.MessageId)).ToList();
-            }
         }
 
         /// Drops all state for a user (after a ban, or when an exempt user trips the threshold).
-        public void Forget(ulong userId)
-        {
-            _users.TryRemove(userId, out _);
-        }
+        public void Forget(ulong userId) => _users.TryRemove(userId, out _);
 
         private void PruneStale()
         {
-            DateTimeOffset cutoff = DateTimeOffset.UtcNow - _window - _window;
-            foreach (KeyValuePair<ulong, UserActivity> user in _users)
-            {
+            var cutoff = DateTimeOffset.UtcNow - _window - _window;
+            foreach (var user in _users)
                 if (!user.Value.Tripped && user.Value.LastSeen < cutoff)
                     _users.TryRemove(user.Key, out _);
-            }
         }
     }
 }

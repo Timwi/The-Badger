@@ -22,13 +22,13 @@ namespace Badger
         public static DiscordClient Client { get; private set; }
         public static SlashCommandsExtension SlashCommands { get; private set; }
 
-        public async Task RunAsync()
+        public async Task RunAsync(CancellationToken cancellationToken = default)
         {
             var json = string.Empty;
 
             using (var fs = File.OpenRead("config.json"))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                json = await sr.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
 
             var configJson = JsonConvert.DeserializeObject<BotConfig>(json);
 
@@ -71,7 +71,7 @@ namespace Badger
             SlashCommands.RegisterCommands<Info>();
             SlashCommands.RegisterCommands<Admin>();
 
-            await events.AssignAllEvents();
+            await Events.AssignAllEvents();
 
             await interactions.AssignAllInteractions();
 
@@ -84,7 +84,17 @@ namespace Badger
 
             await Client.ConnectAsync(activity);
 
-            await Task.Delay(-1);
+            try
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            finally
+            {
+                await Client.DisconnectAsync();
+            }
         }
 
         private Task OnClientReady(DiscordClient sender, ReadyEventArgs e) => Task.CompletedTask;

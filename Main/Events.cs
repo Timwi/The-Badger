@@ -11,12 +11,9 @@ namespace Badger
     {
         private static readonly RaidTracker _raidTracker = new(RaidGuard.ChannelThreshold, RaidGuard.Window);
 
-        public async Task AssignAllEvents()
+        public static async Task AssignAllEvents()
         {
-            Bot.Client.MessageCreated += async (c, e) =>
-            {
-                await CheckForChannelSpam(e);
-            };
+            Bot.Client.MessageCreated += async (c, e) => await CheckForChannelSpam(e);
 
             await Task.CompletedTask;
         }
@@ -33,7 +30,7 @@ namespace Badger
                 if (!_raidTracker.RecordMessage(e.Author.Id, e.Channel.Id, e.Message.Id, e.Message.CreationTimestamp))
                     return;
 
-                DiscordMember member = e.Author as DiscordMember;
+                var member = e.Author as DiscordMember;
                 if (member == null)
                 {
                     try
@@ -47,12 +44,12 @@ namespace Badger
                     }
                 }
 
-                bool exempt = member.Permissions.HasPermission(Permissions.Administrator);
+                var exempt = member.Permissions.HasPermission(Permissions.Administrator);
 
 #if DEBUG
                 // Dry run: never ban, just log what would have happened. Forget so the tester can trip it again.
                 _raidTracker.Forget(e.Author.Id);
-                string description = $"[DEBUG] Would have banned {e.Author.Mention} ({e.Author.Username}, {e.Author.Id}) for posting in " +
+                var description = $"[DEBUG] Would have banned {e.Author.Mention} ({e.Author.Username}, {e.Author.Id}) for posting in " +
                                      $"{RaidGuard.ChannelThreshold}+ channels within {RaidGuard.Window.TotalSeconds} seconds. " +
                                      $"Last channel: {e.Channel.Mention}." +
                                      (exempt ? " In a RELEASE build this user would have been exempt (Administrator)." : "");
@@ -101,7 +98,7 @@ namespace Badger
                                      $"Last channel: {e.Channel.Mention}.";
 #endif
 
-                DiscordChannel logChannel = (await Bot.Client.GetGuildAsync(GuildID.TTS)).GetChannel(ChannelID.BOTLOGS);
+                var logChannel = (await Bot.Client.GetGuildAsync(GuildID.TTS)).GetChannel(ChannelID.BOTLOGS);
                 DiscordEmbedBuilder embed = new()
                 {
                     Color = new DiscordColor("#FFFFFF"),

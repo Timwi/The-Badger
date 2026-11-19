@@ -8,7 +8,7 @@ namespace Badger.Commands
     public class Info : ApplicationCommandModule
     {
         [SlashCommand("help", "Lists all the commands that can be used.")]
-        public async Task Help(InteractionContext ctx)
+        public static async Task Help(InteractionContext ctx)
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
@@ -27,7 +27,7 @@ namespace Badger.Commands
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
         }
         [SlashCommand("source", "Links to the GitHub page.")]
-        public async Task Source(InteractionContext ctx)
+        public static async Task Source(InteractionContext ctx)
         {
             await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
@@ -44,20 +44,20 @@ namespace Badger.Commands
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(embed));
         }
         [SlashCommand("roles", "Lists all of your roles in the server.")]
-        public async Task Roles(InteractionContext ctx)
+        public static async Task Roles(InteractionContext ctx)
         {
             try
             {
                 await ctx.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder() { IsEphemeral = true });
 
-                string description = "";
+                var description = "";
 
-                foreach (DiscordRole role in ctx.Member.Roles)
+                foreach (var role in ctx.Member.Roles)
                 {
                     description += $"<@&{role.Id}>\n";
                 }
 
-                DiscordEmbedBuilder embed = new()
+                var embed = new DiscordEmbedBuilder()
                 {
                     Color = new DiscordColor("#FFFFFF"),
                     Title = $"__**Roles of {ctx.Member.DisplayName}:**__",

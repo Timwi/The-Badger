@@ -5,6 +5,7 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.Exceptions;
+using RT.Util.ExtensionMethods;
 
 namespace Badger
 {
@@ -975,14 +976,13 @@ namespace Badger
             {
                 // Check if the channel(s) has/have the format "<name> #<number>"
                 string channelName = null;
-                Match m;
-                if (eventArgs.Before != null && eventArgs.Before.Channel != null && (m = Regex.Match(eventArgs.Before.Channel.Name, @"^(.*) #\d+$")).Success)
+                if (eventArgs.Before != null && eventArgs.Before.Channel != null && eventArgs.Before.Channel.Name.RegexMatch(@"^(.*) #\d+$", out var m))
                 {
                     channelName = m.Groups[1].Value;
                     await UpdateVoiceChannelCollection(eventArgs.Guild, channelName);
                 }
                 if (eventArgs.After != null && eventArgs.After.Channel != null &&
-                    (m = Regex.Match(eventArgs.After.Channel.Name, @"^(.*) #\d+$")).Success && m.Groups[1].Value != channelName)
+                    eventArgs.After.Channel.Name.RegexMatch(@"^(.*) #\d+$", out m) && m.Groups[1].Value != channelName)
                 {
                     await UpdateVoiceChannelCollection(eventArgs.Guild, m.Groups[1].Value);
                 }
